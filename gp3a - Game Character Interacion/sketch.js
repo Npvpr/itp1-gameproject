@@ -18,6 +18,8 @@ var isJumping;
 var isFalling;
 var isPlummeting;
 var jumpLimit;
+var isFound;
+var difference;
 
 function setup()
 {
@@ -31,10 +33,12 @@ function setup()
 	isFalling = false;
 	isPlummeting = false;
 	jumpLimit = floorPos_y - 50;
+	isFound = false;
 
 	// Drawing
 	cloud = {x_pos: 20, y_pos: 100};
 	canyon = {x_pos: 300, width: 100};
+	collectable = {x_pos: 130, y_pos: 370, size: 10};
 }
 
 function draw()
@@ -399,11 +403,16 @@ function draw()
 
 	///////////INTERACTION CODE//////////
 	//Put conditional statements to move the game character below here
-	if(isLeft == true){
-		gameChar_x -= 5;
-	}else if(isRight == true){
-		gameChar_x += 5;
+	// checking left right
+	if(isPlummeting == false){
+		if(isLeft == true){
+			gameChar_x -= 5;
+		}else if(isRight == true){
+			gameChar_x += 5;
+		}
 	}
+
+	// check jumping
 	if(isJumping == true){
 		if(gameChar_y > jumpLimit){
 			gameChar_y -= 5;
@@ -412,6 +421,7 @@ function draw()
 			isFalling = true;
 		}
 	}
+	// check falling
 	if(isFalling == true){
 		if(gameChar_y < floorPos_y){
 			gameChar_y += 5;
@@ -420,26 +430,74 @@ function draw()
 			isFalling = false;
 		}
 	}
+	// check item
+	if(isFound == false){
+		// A collectable token
+		fill(0,255,255);
+		angleMode(DEGREES)
+		stroke(0);
+		quad(
+			collectable.x_pos-1*collectable.size, collectable.y_pos-2*collectable.size,		
+			collectable.x_pos+1*collectable.size, collectable.y_pos-2*collectable.size,
+			collectable.x_pos+1*collectable.size, collectable.y_pos+2*collectable.size,
+			collectable.x_pos-1*collectable.size, collectable.y_pos+2*collectable.size,
+			);
+		arc(collectable.x_pos, collectable.y_pos-1.9*collectable.size, 2*collectable.size, 2*collectable.size, 180, 0, OPEN)
+		arc(collectable.x_pos, collectable.y_pos+1.9*collectable.size, 2*collectable.size, 2*collectable.size, 0, 180, OPEN)
+		fill(255,255,0);
+		beginShape();
+		vertex(collectable.x_pos, collectable.y_pos-2.5*collectable.size);
+		vertex(collectable.x_pos-0.8*collectable.size,collectable.y_pos+0.2*collectable.size);
+		vertex(collectable.x_pos+0.2*collectable.size,collectable.y_pos+0.2*collectable.size);
+		vertex(collectable.x_pos, collectable.y_pos+2.5*collectable.size);
+		vertex(collectable.x_pos+0.8*collectable.size,collectable.y_pos-0.2*collectable.size)
+		vertex(collectable.x_pos-0.2*collectable.size,collectable.y_pos-0.2*collectable.size);
+		vertex(collectable.x_pos, collectable.y_pos-2.5*collectable.size);
+		endShape();
+	}
+	// check item found
+	if((isFound == false) && (Math.abs(gameChar_x - collectable.x_pos) <= 12)){
+		isFound = true;
+	}
+	// line(canyon.x_pos+canyon.width/2, 0, canyon.x_pos+canyon.width/2, height)
+	// check plummeting
+	if((gameChar_y >= floorPos_y) && (gameChar_y < (floorPos_y+150)) && (Math.abs(gameChar_x - (canyon.x_pos+canyon.width/2)) <= 40)){
+		isPlummeting = true;
+		// this height is checked so that character doesn't look like dragged down while in the middle of the jump
+		if(gameChar_y > (floorPos_y+50)){			
+			isLeft = false;
+			isRight = false;
+			// falling middle
+			if(gameChar_x < (canyon.x_pos+canyon.width/2)){
+				gameChar_x += 5;
+			}else{
+				gameChar_x -= 5;
+			}
+		}
+		// falling down
+		gameChar_y += 5;		
+	} 
 }
 
 
 function keyPressed()
 {
+	// console.log(dist(gameChar_x, gameChar_y, collectable.x_pos, collectable.y_pos))
 	// if statements to control the animation of the character when
 	// keys are pressed.
-	if(key == "ArrowLeft" || key == "a"){
-		isLeft = true;
-		console.log("Left clicked");
-	}else if(key == "ArrowRight" || key == "d"){
-		isRight = true;
-		console.log("Right clicked");
-	}
-	if((key == "ArrowUp" || key == "w" || key == " ") && isJumping == false && isFalling == false){
-		isJumping = true;
-	}
+	if(isPlummeting == false){
+		if(key == "ArrowLeft" || key == "a"){
+			isLeft = true;
+		}else if(key == "ArrowRight" || key == "d"){
+			isRight = true;
+		}
+		if((key == "ArrowUp" || key == "w" || key == " ") && isJumping == false && isFalling == false){
+			isJumping = true;
+		}
+	}	
 	//open up the console to see how these work
-	console.log("keyPressed: " + key);
-	console.log("keyPressed: " + keyCode);
+	// console.log("keyPressed: " + key);
+	// console.log("keyPressed: " + keyCode);
 }
 
 function keyReleased()
@@ -448,11 +506,9 @@ function keyReleased()
 	// keys are released.
 	if(key == "ArrowLeft" || key == "a"){
 		isLeft = false;
-		console.log("Left released");
 	}else if(key == "ArrowRight" || key == "d"){
 		isRight = false;
-		console.log("Right released");
 	}
-	console.log("keyReleased: " + key);
-	console.log("keyReleased: " + keyCode);
+	// console.log("keyReleased: " + key);
+	// console.log("keyReleased: " + keyCode);
 }
