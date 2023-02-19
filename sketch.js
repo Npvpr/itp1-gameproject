@@ -4,8 +4,6 @@ The Game Project
 
 */
 
-var gameChar_x;
-var gameChar_y;
 var floorPos_y;
 var isLeft;
 var isRight;
@@ -17,24 +15,28 @@ let trees_x;
 let treePos_y;
 let clouds;
 let mountains;
-let cameraPosX;
 let collectables;
 let canyons;
 let levelWidth,
 lifeFullImg;
+
 // objects
-const myCamera = {};
+const myCamera = {},
+gameChar = {},
+goal = {};
 
 function preload(){
-	lifeFullImg = loadImage('./images/batteryLifeFull.png');
+	threeLivesImg = loadImage('./images/threeLives.png');
+	twoLivesImg = loadImage('./images/twoLives.png');
+	oneLivesImg = loadImage('./images/oneLives.png');
+	noLivesImg = loadImage('./images/noLives.png');
+	goalImg = loadImage('./images/goal.png');
 }
 
 function setup()
 {
 	createCanvas(windowWidth, 576);
 	floorPos_y = height * 3/4;
-	gameChar_x = 100;
-	gameChar_y = floorPos_y;
 	isLeft = false;
 	isRight = false;
 	isJumping = false;
@@ -43,15 +45,24 @@ function setup()
 	jumpLimit = floorPos_y - 50;
 
 	// My game character's properties
+	gameChar.x = 100;
+	gameChar.y = floorPos_y;
+	gameChar.lives = 3;
+	gameChar.speed = 50;
+	gameChar.jumpHeight = 5;
 
 	// Camera's properies
-	myCamera.start = 600;
+	myCamera.start = 670;
+
+	// Goal's properies
+	goal.x = 3970;
+	goal.y = floorPos_y -80;
 
 	// Width of the game level
 	levelWidth = 4000;
 
 	// Trees
-	trees_x = [ 0, 200, 400, 700, 900 ]
+	trees_x = [ 60, 400, 700, 900 ]
 	treePos_y = height/2;
 
 	// Clouds
@@ -63,15 +74,15 @@ function setup()
 
 	// Mountains
 	mountains = [
-		// mountain1 = {x_pos: -200, y_pos: floorPos_y},
-		// mountain2 = {x_pos: 550, y_pos: floorPos_y},
+		mountain1 = {x_pos: 60, y_pos: floorPos_y},
+		mountain2 = {x_pos: 660, y_pos: floorPos_y},
 		// mountain3 = {x_pos: 900, y_pos: floorPos_y}
 	]
 
 	// Drawing
 	canyons = [
-		// {x_pos: 100, width: 80},
-		// {x_pos: 300, width: 80},
+		{x_pos: 500, width: 80},
+		{x_pos: 1100, width: 80},
 		// {x_pos: 600, width: 80},
 		// {x_pos: 900, width: 80},
 		// {x_pos: 1100, width: 80}
@@ -83,18 +94,14 @@ function setup()
 		// {x_pos: 230, y_pos: 370, size: 10, isFound: false},
 		// {x_pos: 530, y_pos: 370, size: 10, isFound: false}
 	]
-	// cameraPosX = 0;
 }
 
 function draw()
 {
 	///////////DRAWING CODE//////////
 
-	// camera test
-	// cameraPosX = gameChar_x - 100;
-
 	//fill the sky blue
-	background(100,155,255);
+	background(161, 220, 255);
 
 	//draw desert ground
 	noStroke();
@@ -108,22 +115,20 @@ function draw()
 	fill(77,44,62);
 	rect(0, floorPos_y+2*((height-floorPos_y)/3), width, (height-floorPos_y)/3);
 
-
-
-	// push();
 	// Camera Control
 	// Same as game character between x(600-3400)
 	// Fixed when close to edges
 	// myCamera.start = start of the camera position (used in translate so that when gameChar passed the camera start, translate others behind gameChar by myCamera.start pixels)
-	if(gameChar_x > myCamera.start && gameChar_x < (levelWidth-myCamera.start)){
-		translate(-(gameChar_x-myCamera.start), 0);
-	}else if(gameChar_x >= (levelWidth-myCamera.start)){
+	if(gameChar.x > myCamera.start && gameChar.x < (levelWidth-myCamera.start)){
+		translate(-(gameChar.x-myCamera.start), 0);
+	}else if(gameChar.x >= (levelWidth-myCamera.start)){
 		translate(-(levelWidth-myCamera.start-myCamera.start), 0);
 	}
 
 	drawClouds();
 	drawMountains();
 	drawTrees();
+	drawGoal();
 	for(let i = 0; i < canyons.length; i++){
 		drawCanyon(canyons[i]);
 		checkCanyon(canyons[i]);	
@@ -132,331 +137,38 @@ function draw()
 		drawCollectable(collectables[i]);
 		checkCollectable(collectables[i]);	
 	}
-	// pop();
-	image(lifeFullImg, 15, 10);
-	// lifeFullImg.resize(120, 0);
+	image(threeLivesImg, 15, 10);
 
-	//the game character
-	if(isLeft && (isJumping || isFalling))
-	{
-		// add your jumping-left code
-		//Jumping to the left
-		//Setup
-		noFill();
-		stroke(0);
-		rectMode(CENTER);
-		angleMode(DEGREES);
-		//head
-		fill(0,255,255);
-		rect(gameChar_x, gameChar_y-35, 8, 14, 3)
-		//ears
-		fill(80,80,80)
-		ellipse(gameChar_x, gameChar_y-35, 2, 4)
-		//neck
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-27.5, 3, 1)
-		//right arm (covered one)
-		fill(0,255,255);
-		quad(gameChar_x, gameChar_y-20.5, gameChar_x, gameChar_y-25.5, gameChar_x-11, gameChar_y-25.5, gameChar_x-11, gameChar_y-20.5)
-		arc(gameChar_x, gameChar_y-23, 5, 5, 0, 360, OPEN)
-		arc(gameChar_x-11, gameChar_y-23, 5, 5, 75, 290, OPEN)
-		//right leg
-		fill(0,255,255);
-		quad(gameChar_x, gameChar_y-20.5+12, gameChar_x, gameChar_y-25.5+12, gameChar_x-11, gameChar_y-25.5+12, gameChar_x-11, gameChar_y-20.5+12)
-		arc(gameChar_x, gameChar_y-23+12, 5, 5, 0, 360, OPEN)
-		arc(gameChar_x-11, gameChar_y-23+12, 5, 5, 75, 290, OPEN)
-		//chest
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-20, 11, 14, 2)
-		noFill()
-		// trouser
-		fill(80,80,80)
-		quad(gameChar_x-2.5, gameChar_y-13, gameChar_x+2.5, gameChar_y-13, gameChar_x, gameChar_y-10, gameChar_x, gameChar_y-10)
-		//left leg
-		fill(0,255,255)
-		quad(gameChar_x-1.5, gameChar_y-21+12, gameChar_x+1.5, gameChar_y-25+12, gameChar_x+13.5, gameChar_y-21+12, gameChar_x+11, gameChar_y-17+12)
-		arc(gameChar_x, gameChar_y-23+12, 5, 5, 75, 310, OPEN)
-		arc(gameChar_x+12, gameChar_y-19+12, 5, 5, 270, 125, OPEN)
-		noFill();
-		//left arm
-		fill(0,255,255)
-		quad(gameChar_x-1.5, gameChar_y-21, gameChar_x+1.5, gameChar_y-25, gameChar_x+13.5, gameChar_y-21, gameChar_x+11, gameChar_y-17)
-		arc(gameChar_x, gameChar_y-23, 5, 5, 75, 310, OPEN)
-		arc(gameChar_x+12, gameChar_y-19, 5, 5, 270, 125, OPEN)
-		//Refix
-		rectMode(CORNER);
+	// Checking Game character's style
+	if(isLeft && (isJumping || isFalling)){
+		drawJumpLeft();
+	}else if(isRight && (isJumping || isFalling)){
+		drawJumpRight();
+	}else if(isLeft){
+		drawWalkLeft();
+	}else if(isRight){
+		drawWalkRight();
+	}else if(isJumping || isFalling || isPlummeting){
+		drawJumpFront();
+	}else{
+		drawStandFront();
 	}
-	else if(isRight && (isJumping || isFalling))
-	{
-		// add your jumping-right code
-		//Jumping right
-		//Setup
-		noFill();
-		stroke(0);
-		rectMode(CENTER);
-		angleMode(DEGREES);
-		//head
-		fill(0,255,255);
-		rect(gameChar_x, gameChar_y-35, 8, 14, 3)
-		//ears
-		fill(80,80,80)
-		ellipse(gameChar_x, gameChar_y-35, 2, 4)
-		//neck
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-27.5, 3, 1)
-		//left arm (covered one)
-		fill(0,255,255);
-		quad(gameChar_x, gameChar_y-20.5, gameChar_x, gameChar_y-25.5, gameChar_x+11, gameChar_y-25.5, gameChar_x+11, gameChar_y-20.5)
-		arc(gameChar_x, gameChar_y-23, 5, 5, 110, 300, OPEN)
-		arc(gameChar_x+11, gameChar_y-23, 5, 5, 245, 100, OPEN)
-		//left leg
-		fill(0,255,255);
-		quad(gameChar_x, gameChar_y-20.5+12, gameChar_x, gameChar_y-25.5+12, gameChar_x+11, gameChar_y-25.5+12, gameChar_x+11, gameChar_y-20.5+12)
-		arc(gameChar_x, gameChar_y-23+12, 5, 5, 110, 300, OPEN)
-		arc(gameChar_x+11, gameChar_y-23+12, 5, 5, 245, 100, OPEN)
-		//chest
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-20, 11, 14, 2)
-		noFill()
-		// trouser
-		fill(80,80,80)
-		quad(gameChar_x-2.5, gameChar_y-13, gameChar_x+2.5, gameChar_y-13, gameChar_x, gameChar_y-10, gameChar_x, gameChar_y-10)
-		//right leg
-		fill(0,255,255)
-		quad(gameChar_x+1.5, gameChar_y-21+12, gameChar_x-1.5, gameChar_y-25+12, gameChar_x-13.5, gameChar_y-21+12, gameChar_x-11, gameChar_y-17+12)
-		arc(gameChar_x, gameChar_y-23+12, 5, 5, 220, 80, OPEN)
-		arc(gameChar_x-12, gameChar_y-19+12, 5, 5, 45, 250, OPEN)
-		noFill();
-		//right arm
-		fill(0,255,255)
-		quad(gameChar_x+1.5, gameChar_y-21, gameChar_x-1.5, gameChar_y-25, gameChar_x-13.5, gameChar_y-21, gameChar_x-11, gameChar_y-17)
-		arc(gameChar_x, gameChar_y-23, 5, 5, 220, 80, OPEN)
-		arc(gameChar_x-12, gameChar_y-19, 5, 5, 45, 250, OPEN)
-		//Refix
-		rectMode(CORNER);
-	}
-	else if(isLeft)
-	{
-		// add your walking left code
-		//Walking, turned left
-		//Setup
-		noFill();
-		stroke(0);
-		rectMode(CENTER);
-		angleMode(DEGREES);
-		//head
-		fill(0,255,255)
-		rect(gameChar_x, gameChar_y-35, 8, 14, 3)
-		//ears
-		fill(80,80,80)
-		ellipse(gameChar_x, gameChar_y-35, 2, 4)
-		noFill()
-		//neck
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-27.5, 3, 1)
-		//right arm (covered one)
-		fill(0,255,255);
-		quad(gameChar_x+1.5, gameChar_y-21, gameChar_x-1.5, gameChar_y-25, gameChar_x-11, gameChar_y-21, gameChar_x-9.5, gameChar_y-16.4)
-		arc(gameChar_x, gameChar_y-23, 5, 5, 235, 70)
-		arc(gameChar_x-9.4, gameChar_y-19, 5, 5, 70, 235)
-		//right leg
-		fill(0,255,255);
-		quad(gameChar_x+1.5, gameChar_y-21+12, gameChar_x-1.5, gameChar_y-25+12, gameChar_x-11, gameChar_y-21+12, gameChar_x-9.5, gameChar_y-16+12)
-		arc(gameChar_x, gameChar_y-23+12, 5, 5, 235, 70)
-		arc(gameChar_x-9.4, gameChar_y-19+12, 5, 5, 70, 235)
-		//chest
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-20, 11, 14, 2)
-		noFill()
-		// trouser
-		fill(80,80,80)
-		quad(gameChar_x-2.5, gameChar_y-13, gameChar_x+2.5, gameChar_y-13, gameChar_x, gameChar_y-10, gameChar_x, gameChar_y-10)
-		//left leg
-		fill(0,255,255)
-		quad(gameChar_x-2.5, gameChar_y-23+12, gameChar_x+1.9, gameChar_y-25+12, gameChar_x+6, gameChar_y-12+12, gameChar_x+1.6, gameChar_y-10+12)
-		arc(gameChar_x, gameChar_y-23+12, 5, 5, 160, 345)
-		arc(gameChar_x+3.4, gameChar_y-12+12, 5, 5, 345, 160)
-		noFill();
-		//left arm
-		fill(0,255,255)
-		quad(gameChar_x-2.5, gameChar_y-23, gameChar_x+1.9, gameChar_y-25, gameChar_x+6, gameChar_y-12, gameChar_x+1.6, gameChar_y-10)
-		arc(gameChar_x, gameChar_y-23, 5, 5, 160, 345)
-		arc(gameChar_x+3.4, gameChar_y-12, 5, 5, 345, 160)
-		noFill();	
-		//Refix
-		rectMode(CORNER);
-	}
-	else if(isRight)
-	{
-		// add your walking right code
-		//Walking, turned right
-		//Setup
-		noFill();
-		stroke(0);
-		rectMode(CENTER);
-		angleMode(DEGREES);
-		//head
-		fill(0,255,255);
-		rect(gameChar_x, gameChar_y-35, 8, 14, 3)
-		//ears
-		fill(80,80,80)
-		ellipse(gameChar_x, gameChar_y-35, 2, 4)
-		//neck
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-27.5, 3, 1)
-		//left arm (covered one)
-		fill(0,255,255);
-		quad(gameChar_x-1.5, gameChar_y-21, gameChar_x+1.5, gameChar_y-25, gameChar_x+11, gameChar_y-21, gameChar_x+9.5, gameChar_y-16.4)
-		arc(gameChar_x, gameChar_y-23, 5, 5, 110, 300)
-		arc(gameChar_x+9.4, gameChar_y-19, 5, 5, 300, 110)
-		//left leg
-		fill(0,255,255);
-		quad(gameChar_x-1.5, gameChar_y-21+12, gameChar_x+1.5, gameChar_y-25+12, gameChar_x+11, gameChar_y-21+12, gameChar_x+9.5, gameChar_y-16+12)
-		arc(gameChar_x, gameChar_y-23+12, 5, 5, 110, 300)
-		arc(gameChar_x+9.4, gameChar_y-19+12, 5, 5, 300, 110)
-		//chest
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-20, 11, 14, 2)
-		noFill()
-		// trouser
-		fill(80,80,80)
-		quad(gameChar_x-2.5, gameChar_y-13, gameChar_x+2.5, gameChar_y-13, gameChar_x, gameChar_y-10, gameChar_x, gameChar_y-10)
-		//rght leg
-		fill(0,255,255)
-		quad(gameChar_x+2.5, gameChar_y-23+12, gameChar_x-1.9, gameChar_y-25+12, gameChar_x-6, gameChar_y-12+12, gameChar_x-1.6, gameChar_y-10+12)
-		arc(gameChar_x, gameChar_y-23+12, 5, 5, 200, 45)
-		arc(gameChar_x-3.4, gameChar_y-12+12, 5, 5, 45, 200)
-		noFill();
-		//right arm
-		fill(0,255,255)
-		quad(gameChar_x+2.5, gameChar_y-23, gameChar_x-1.9, gameChar_y-25, gameChar_x-6, gameChar_y-12, gameChar_x-1.6, gameChar_y-10)
-		arc(gameChar_x, gameChar_y-23, 5, 5, 200, 45)
-		arc(gameChar_x-3.4, gameChar_y-12, 5, 5, 45, 200)
-		noFill();	
-		//Refix
-		rectMode(CORNER);
-	}
-	else if(isJumping || isFalling || isPlummeting)
-	{
-		// add your jumping facing forwards code
-		//Jumping facing forwards
-		//Setup
-		noFill();
-		stroke(0);
-		rectMode(CENTER);
-		angleMode(DEGREES);
-		//head
-		fill(0,255,255)
-		rect(gameChar_x, gameChar_y-35, 16, 14, 4)
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-35, 10, 8, 2)
-		//eyes
-		fill(0,255,255)
-		stroke(0,255,255)
-		ellipse(gameChar_x-2, gameChar_y-35, 2, 4)
-		ellipse(gameChar_x+2, gameChar_y-35, 2, 4)
-		stroke(0)
-		//ears
-		fill(80,80,80)
-		ellipse(gameChar_x-9, gameChar_y-35, 2, 4)
-		ellipse(gameChar_x+9, gameChar_y-35, 2, 4)
-		noFill()
-		//neck
-		fill(0,255,255)
-		rect(gameChar_x, gameChar_y-27.5, 6, 1)
-		//chest
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-20, 22, 14, 2)
-		//left arm
-		fill(0,255,255)
-		quad(gameChar_x-11.5, gameChar_y-26, gameChar_x-15.5, gameChar_y-23, gameChar_x-22.5, gameChar_y-33, gameChar_x-18.5, gameChar_y-36)
-		arc(gameChar_x-14, gameChar_y-25, 5, 5, 333, 135)
-		arc(gameChar_x-21, gameChar_y-35, 5, 5, 108, 350, OPEN)
-		//right arm
-		fill(0,255,255)
-		quad(gameChar_x+15, gameChar_y-23, gameChar_x+12, gameChar_y-27, gameChar_x+19, gameChar_y-36.5, gameChar_x+23.5, gameChar_y-34)
-		arc(gameChar_x+13.5, gameChar_y-25, 5, 5, 40, 250, OPEN)
-		arc(gameChar_x+21, gameChar_y-35, 5, 5, 200, 40, OPEN)
-		// trouser
-		fill(80,80,80)
-		quad(gameChar_x-5, gameChar_y-13, gameChar_x+5, gameChar_y-13, gameChar_x+2.5, gameChar_y-10, gameChar_x-2.5, gameChar_y-10)
-		//left leg
-		fill(0,255,255)
-		quad(gameChar_x-4, gameChar_y-8, gameChar_x-7, gameChar_y-12, gameChar_x-16.5, gameChar_y-7, gameChar_x-13.5, gameChar_y-3)
-		arc(gameChar_x-5.5, gameChar_y-10, 5, 5, 220, 70, OPEN)
-		arc(gameChar_x-15, gameChar_y-5, 5, 5, 40, 250, OPEN)
-		//right leg
-		fill(0,255,255)
-		quad(gameChar_x+3.8, gameChar_y-8, gameChar_x+7, gameChar_y-12, gameChar_x+15.2, gameChar_y-1, gameChar_x+11.5, gameChar_y+2)
-		arc(gameChar_x+5.5, gameChar_y-10, 5, 5, 120, 340, OPEN)
-		arc(gameChar_x+13, gameChar_y, 5, 5, 320, 150, OPEN)
-		//Refix
-		rectMode(CORNER);
-	}
-	else
-	{
-		// add your standing front facing code
-		//Standing, facing frontwards
-		//Setup
-		noFill();
-		stroke(0);
-		rectMode(CENTER);
-		//head
-		fill(0,255,255)
-		rect(gameChar_x, gameChar_y-35, 16, 14, 4)
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-35, 10, 8, 2)
-		//eyes
-		fill(0,255,255)
-		stroke(0,255,255)
-		ellipse(gameChar_x-2, gameChar_y-35, 2, 4)
-		ellipse(gameChar_x+2, gameChar_y-35, 2, 4)
-		stroke(0)
-		//ears
-		fill(80,80,80)
-		ellipse(gameChar_x-9, gameChar_y-35, 2, 4)
-		ellipse(gameChar_x+9, gameChar_y-35, 2, 4)
-		noFill()
-		//neck
-		rect(gameChar_x, gameChar_y-27.5, 6, 1)
-		//chest
-		fill(80,80,80)
-		rect(gameChar_x, gameChar_y-20, 22, 14, 2)
-		//left arm
-		fill(0,255,255)
-		rect(gameChar_x-13.5, gameChar_y-18, 5, 14, 2.5)
-		//right arm
-		rect(gameChar_x+13.5, gameChar_y-18, 5, 14, 2.5)
-		// trouser
-		fill(80,80,80)
-		quad(gameChar_x-5, gameChar_y-13, gameChar_x+5, gameChar_y-13, gameChar_x+2.5, gameChar_y-10, gameChar_x-2.5, gameChar_y-10)
-		//left leg
-		fill(0,255,255)
-		rect(gameChar_x-5.5, gameChar_y-5, 5, 14, 2.5)
-		//right leg
-		rect(gameChar_x+5.5, gameChar_y-5, 5, 14, 2.5)
-		//Refix
-		rectMode(CORNER);
-	}
-	// I commented this pop out because when it is poped here, the character is left behind
-	// same as the background instead of staying in the center unless the user move the character
-	// pop();
 
 	///////////INTERACTION CODE//////////
 	//Put conditional statements to move the game character below here
 	// checking left right
 	if(isPlummeting == false){
-		if(isLeft == true && gameChar_x > 20){
-			gameChar_x -= 40;
-		}else if(isRight == true && gameChar_x < (levelWidth-20)){
-			gameChar_x += 40;
+		if(isLeft == true && gameChar.x > 20){
+			gameChar.x -= gameChar.speed;
+		}else if(isRight == true && gameChar.x < (levelWidth-20)){
+			gameChar.x += gameChar.speed;
 		}
 	}
 
 	// check jumping
 	if(isJumping == true){
-		if(gameChar_y > jumpLimit){
-			gameChar_y -= 5;
+		if(gameChar.y > jumpLimit){
+			gameChar.y -= 5;
 		}else{
 			isJumping = false;
 			isFalling = true;
@@ -464,26 +176,25 @@ function draw()
 	}
 	// check falling
 	if(isFalling == true){
-		if(gameChar_y < floorPos_y){
-			gameChar_y += 5;
+		if(gameChar.y < floorPos_y){
+			gameChar.y += 5;
 		}else{
-			gameChar_y = floorPos_y;
+			gameChar.y = floorPos_y;
 			isFalling = false;
 		}
 	}
 
 	//TESTING ZONE
-	// for(let i = 0; i < 5000; i+=500){
-	// 	stroke(255, 0, 0);
-	// 	text(i, i, 550);
-	// 	rect(i, 0, 1, windowHeight);
-	// }
+	for(let i = 500; i < 5000; i+=500){
+		stroke(255, 0, 0);
+		text(i, i, 550);
+		rect(i, 0, 1, windowHeight);
+	}
 }
-
 
 function keyPressed()
 {
-	// console.log(dist(gameChar_x, gameChar_y, collectable.x_pos, collectable.y_pos))
+	// console.log(dist(gameChar.x, gameChar.y, collectable.x_pos, collectable.y_pos))
 	// if statements to control the animation of the character when
 	// keys are pressed.
 	if(isPlummeting == false){
@@ -527,7 +238,7 @@ function drawClouds(){
 		ellipse(cloud.x_pos+170, cloud.y_pos-20, 50, 50)
 		ellipse(cloud.x_pos+235, cloud.y_pos-20, 50, 50)
 		rect(cloud.x_pos+150, cloud.y_pos, 100, 50)
-		fill(100, 155, 255);
+		fill(161, 220, 255);
 		rect(cloud.x_pos+100, cloud.y_pos+25, 200, 100);
 	}
 }
@@ -634,18 +345,9 @@ function drawCanyon(canyon){
 	//draw the canyon
 	// A canyon
 	noStroke();
-	// // First Layer
-	// fill(182,91,52);
-	// rect(0, floorPos_y, width, (height-floorPos_y)/3)
-	// // Second Layer
-	// fill(111,63,65);
-	// rect(0, floorPos_y+((height-floorPos_y)/3), width, (height-floorPos_y)/3);
-	// // Third Layer
-	// fill(77,44,62);
-	// rect(0, floorPos_y+2*((height-floorPos_y)/3), width, (height-floorPos_y)/3);
 	// Canyon
 	rectMode(CORNER);
-	fill(100, 155, 255);
+	fill(161, 220, 255);
 	rect(canyon.x_pos, floorPos_y, canyon.width, (height-floorPos_y)/3);
 	rect(canyon.x_pos+canyon.width/6, floorPos_y+((height-floorPos_y)/3), 2*(canyon.width/3), (height-floorPos_y)/3);
 	rect(canyon.x_pos+canyon.width/3, floorPos_y+2*((height-floorPos_y)/3), canyon.width/3, (height-floorPos_y)/3);
@@ -655,27 +357,327 @@ function drawCanyon(canyon){
 
 function checkCollectable(t_collectable){
 	// check item found
-	if((t_collectable.isFound == false) && (Math.abs((gameChar_x+cameraPosX) - t_collectable.x_pos) <= 12) && (Math.abs((gameChar_y) - t_collectable.y_pos) <= 150)){
+	if((t_collectable.isFound == false) && (Math.abs((gameChar.x) - t_collectable.x_pos) <= 12) && (Math.abs((gameChar.y) - t_collectable.y_pos) <= 150)){
 		t_collectable.isFound = true;
 	}
 }
 
 function checkCanyon(canyon){
 	// check plummeting
-	if((gameChar_y >= floorPos_y) && (gameChar_y < (floorPos_y+150)) && (Math.abs((gameChar_x+cameraPosX) - (canyon.x_pos+canyon.width/2)) <= 40)){
+	if((gameChar.y >= floorPos_y) && (gameChar.y < (floorPos_y+150)) && (Math.abs((gameChar.x) - (canyon.x_pos+canyon.width/2)) <= 30)){
 		isPlummeting = true;
 		// this height is checked so that character doesn't look like dragged down while in the middle of the jump
-		if(gameChar_y > (floorPos_y+50)){			
+		if(gameChar.y > (floorPos_y+50)){			
 			isLeft = false;
 			isRight = false;
 			// falling middle
-			if(gameChar_x < (canyon.x_pos+canyon.width/2)){
-				gameChar_x += 5;
+			if(gameChar.x < (canyon.x_pos+canyon.width/2)){
+				gameChar.x += 5;
 			}else{
-				gameChar_x -= 5;
+				gameChar.x -= 5;
 			}
 		}
 		// falling down
-		gameChar_y += 5;
+		gameChar.y += 5;
 	}
+}
+
+function drawGoal(){
+	image(goalImg, goal.x, goal.y);
+}
+
+// Game Character styles
+function drawJumpLeft(){
+	//Jumping to the left
+	//Setup
+	noFill();
+	stroke(0);
+	rectMode(CENTER);
+	angleMode(DEGREES);
+	//head
+	fill(0,255,255);
+	rect(gameChar.x, gameChar.y-35, 8, 14, 3)
+	//ears
+	fill(80,80,80)
+	ellipse(gameChar.x, gameChar.y-35, 2, 4)
+	//neck
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-27.5, 3, 1)
+	//right arm (covered one)
+	fill(0,255,255);
+	quad(gameChar.x, gameChar.y-20.5, gameChar.x, gameChar.y-25.5, gameChar.x-11, gameChar.y-25.5, gameChar.x-11, gameChar.y-20.5)
+	arc(gameChar.x, gameChar.y-23, 5, 5, 0, 360, OPEN)
+	arc(gameChar.x-11, gameChar.y-23, 5, 5, 75, 290, OPEN)
+	//right leg
+	fill(0,255,255);
+	quad(gameChar.x, gameChar.y-20.5+12, gameChar.x, gameChar.y-25.5+12, gameChar.x-11, gameChar.y-25.5+12, gameChar.x-11, gameChar.y-20.5+12)
+	arc(gameChar.x, gameChar.y-23+12, 5, 5, 0, 360, OPEN)
+	arc(gameChar.x-11, gameChar.y-23+12, 5, 5, 75, 290, OPEN)
+	//chest
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-20, 11, 14, 2)
+	noFill()
+	// trouser
+	fill(80,80,80)
+	quad(gameChar.x-2.5, gameChar.y-13, gameChar.x+2.5, gameChar.y-13, gameChar.x, gameChar.y-10, gameChar.x, gameChar.y-10)
+	//left leg
+	fill(0,255,255)
+	quad(gameChar.x-1.5, gameChar.y-21+12, gameChar.x+1.5, gameChar.y-25+12, gameChar.x+13.5, gameChar.y-21+12, gameChar.x+11, gameChar.y-17+12)
+	arc(gameChar.x, gameChar.y-23+12, 5, 5, 75, 310, OPEN)
+	arc(gameChar.x+12, gameChar.y-19+12, 5, 5, 270, 125, OPEN)
+	noFill();
+	//left arm
+	fill(0,255,255)
+	quad(gameChar.x-1.5, gameChar.y-21, gameChar.x+1.5, gameChar.y-25, gameChar.x+13.5, gameChar.y-21, gameChar.x+11, gameChar.y-17)
+	arc(gameChar.x, gameChar.y-23, 5, 5, 75, 310, OPEN)
+	arc(gameChar.x+12, gameChar.y-19, 5, 5, 270, 125, OPEN)
+	//Refix
+	rectMode(CORNER);
+}
+
+function drawJumpRight(){
+	//Jumping right
+	//Setup
+	noFill();
+	stroke(0);
+	rectMode(CENTER);
+	angleMode(DEGREES);
+	//head
+	fill(0,255,255);
+	rect(gameChar.x, gameChar.y-35, 8, 14, 3)
+	//ears
+	fill(80,80,80)
+	ellipse(gameChar.x, gameChar.y-35, 2, 4)
+	//neck
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-27.5, 3, 1)
+	//left arm (covered one)
+	fill(0,255,255);
+	quad(gameChar.x, gameChar.y-20.5, gameChar.x, gameChar.y-25.5, gameChar.x+11, gameChar.y-25.5, gameChar.x+11, gameChar.y-20.5)
+	arc(gameChar.x, gameChar.y-23, 5, 5, 110, 300, OPEN)
+	arc(gameChar.x+11, gameChar.y-23, 5, 5, 245, 100, OPEN)
+	//left leg
+	fill(0,255,255);
+	quad(gameChar.x, gameChar.y-20.5+12, gameChar.x, gameChar.y-25.5+12, gameChar.x+11, gameChar.y-25.5+12, gameChar.x+11, gameChar.y-20.5+12)
+	arc(gameChar.x, gameChar.y-23+12, 5, 5, 110, 300, OPEN)
+	arc(gameChar.x+11, gameChar.y-23+12, 5, 5, 245, 100, OPEN)
+	//chest
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-20, 11, 14, 2)
+	noFill()
+	// trouser
+	fill(80,80,80)
+	quad(gameChar.x-2.5, gameChar.y-13, gameChar.x+2.5, gameChar.y-13, gameChar.x, gameChar.y-10, gameChar.x, gameChar.y-10)
+	//right leg
+	fill(0,255,255)
+	quad(gameChar.x+1.5, gameChar.y-21+12, gameChar.x-1.5, gameChar.y-25+12, gameChar.x-13.5, gameChar.y-21+12, gameChar.x-11, gameChar.y-17+12)
+	arc(gameChar.x, gameChar.y-23+12, 5, 5, 220, 80, OPEN)
+	arc(gameChar.x-12, gameChar.y-19+12, 5, 5, 45, 250, OPEN)
+	noFill();
+	//right arm
+	fill(0,255,255)
+	quad(gameChar.x+1.5, gameChar.y-21, gameChar.x-1.5, gameChar.y-25, gameChar.x-13.5, gameChar.y-21, gameChar.x-11, gameChar.y-17)
+	arc(gameChar.x, gameChar.y-23, 5, 5, 220, 80, OPEN)
+	arc(gameChar.x-12, gameChar.y-19, 5, 5, 45, 250, OPEN)
+	//Refix
+	rectMode(CORNER);
+}
+
+function drawWalkLeft(){
+	//Walking, turned left
+	//Setup
+	noFill();
+	stroke(0);
+	rectMode(CENTER);
+	angleMode(DEGREES);
+	//head
+	fill(0,255,255)
+	rect(gameChar.x, gameChar.y-35, 8, 14, 3)
+	//ears
+	fill(80,80,80)
+	ellipse(gameChar.x, gameChar.y-35, 2, 4)
+	noFill()
+	//neck
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-27.5, 3, 1)
+	//right arm (covered one)
+	fill(0,255,255);
+	quad(gameChar.x+1.5, gameChar.y-21, gameChar.x-1.5, gameChar.y-25, gameChar.x-11, gameChar.y-21, gameChar.x-9.5, gameChar.y-16.4)
+	arc(gameChar.x, gameChar.y-23, 5, 5, 235, 70)
+	arc(gameChar.x-9.4, gameChar.y-19, 5, 5, 70, 235)
+	//right leg
+	fill(0,255,255);
+	quad(gameChar.x+1.5, gameChar.y-21+12, gameChar.x-1.5, gameChar.y-25+12, gameChar.x-11, gameChar.y-21+12, gameChar.x-9.5, gameChar.y-16+12)
+	arc(gameChar.x, gameChar.y-23+12, 5, 5, 235, 70)
+	arc(gameChar.x-9.4, gameChar.y-19+12, 5, 5, 70, 235)
+	//chest
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-20, 11, 14, 2)
+	noFill()
+	// trouser
+	fill(80,80,80)
+	quad(gameChar.x-2.5, gameChar.y-13, gameChar.x+2.5, gameChar.y-13, gameChar.x, gameChar.y-10, gameChar.x, gameChar.y-10)
+	//left leg
+	fill(0,255,255)
+	quad(gameChar.x-2.5, gameChar.y-23+12, gameChar.x+1.9, gameChar.y-25+12, gameChar.x+6, gameChar.y-12+12, gameChar.x+1.6, gameChar.y-10+12)
+	arc(gameChar.x, gameChar.y-23+12, 5, 5, 160, 345)
+	arc(gameChar.x+3.4, gameChar.y-12+12, 5, 5, 345, 160)
+	noFill();
+	//left arm
+	fill(0,255,255)
+	quad(gameChar.x-2.5, gameChar.y-23, gameChar.x+1.9, gameChar.y-25, gameChar.x+6, gameChar.y-12, gameChar.x+1.6, gameChar.y-10)
+	arc(gameChar.x, gameChar.y-23, 5, 5, 160, 345)
+	arc(gameChar.x+3.4, gameChar.y-12, 5, 5, 345, 160)
+	noFill();	
+	//Refix
+	rectMode(CORNER);
+}
+
+function drawWalkRight(){
+	//Walking, turned right
+	//Setup
+	noFill();
+	stroke(0);
+	rectMode(CENTER);
+	angleMode(DEGREES);
+	//head
+	fill(0,255,255);
+	rect(gameChar.x, gameChar.y-35, 8, 14, 3)
+	//ears
+	fill(80,80,80)
+	ellipse(gameChar.x, gameChar.y-35, 2, 4)
+	//neck
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-27.5, 3, 1)
+	//left arm (covered one)
+	fill(0,255,255);
+	quad(gameChar.x-1.5, gameChar.y-21, gameChar.x+1.5, gameChar.y-25, gameChar.x+11, gameChar.y-21, gameChar.x+9.5, gameChar.y-16.4)
+	arc(gameChar.x, gameChar.y-23, 5, 5, 110, 300)
+	arc(gameChar.x+9.4, gameChar.y-19, 5, 5, 300, 110)
+	//left leg
+	fill(0,255,255);
+	quad(gameChar.x-1.5, gameChar.y-21+12, gameChar.x+1.5, gameChar.y-25+12, gameChar.x+11, gameChar.y-21+12, gameChar.x+9.5, gameChar.y-16+12)
+	arc(gameChar.x, gameChar.y-23+12, 5, 5, 110, 300)
+	arc(gameChar.x+9.4, gameChar.y-19+12, 5, 5, 300, 110)
+	//chest
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-20, 11, 14, 2)
+	noFill()
+	// trouser
+	fill(80,80,80)
+	quad(gameChar.x-2.5, gameChar.y-13, gameChar.x+2.5, gameChar.y-13, gameChar.x, gameChar.y-10, gameChar.x, gameChar.y-10)
+	//rght leg
+	fill(0,255,255)
+	quad(gameChar.x+2.5, gameChar.y-23+12, gameChar.x-1.9, gameChar.y-25+12, gameChar.x-6, gameChar.y-12+12, gameChar.x-1.6, gameChar.y-10+12)
+	arc(gameChar.x, gameChar.y-23+12, 5, 5, 200, 45)
+	arc(gameChar.x-3.4, gameChar.y-12+12, 5, 5, 45, 200)
+	noFill();
+	//right arm
+	fill(0,255,255)
+	quad(gameChar.x+2.5, gameChar.y-23, gameChar.x-1.9, gameChar.y-25, gameChar.x-6, gameChar.y-12, gameChar.x-1.6, gameChar.y-10)
+	arc(gameChar.x, gameChar.y-23, 5, 5, 200, 45)
+	arc(gameChar.x-3.4, gameChar.y-12, 5, 5, 45, 200)
+	noFill();	
+	//Refix
+	rectMode(CORNER);
+}
+
+function drawJumpFront(){
+	//Jumping facing forwards
+	//Setup
+	noFill();
+	stroke(0);
+	rectMode(CENTER);
+	angleMode(DEGREES);
+	//head
+	fill(0,255,255)
+	rect(gameChar.x, gameChar.y-35, 16, 14, 4)
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-35, 10, 8, 2)
+	//eyes
+	fill(0,255,255)
+	stroke(0,255,255)
+	ellipse(gameChar.x-2, gameChar.y-35, 2, 4)
+	ellipse(gameChar.x+2, gameChar.y-35, 2, 4)
+	stroke(0)
+	//ears
+	fill(80,80,80)
+	ellipse(gameChar.x-9, gameChar.y-35, 2, 4)
+	ellipse(gameChar.x+9, gameChar.y-35, 2, 4)
+	noFill()
+	//neck
+	fill(0,255,255)
+	rect(gameChar.x, gameChar.y-27.5, 6, 1)
+	//chest
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-20, 22, 14, 2)
+	//left arm
+	fill(0,255,255)
+	quad(gameChar.x-11.5, gameChar.y-26, gameChar.x-15.5, gameChar.y-23, gameChar.x-22.5, gameChar.y-33, gameChar.x-18.5, gameChar.y-36)
+	arc(gameChar.x-14, gameChar.y-25, 5, 5, 333, 135)
+	arc(gameChar.x-21, gameChar.y-35, 5, 5, 108, 350, OPEN)
+	//right arm
+	fill(0,255,255)
+	quad(gameChar.x+15, gameChar.y-23, gameChar.x+12, gameChar.y-27, gameChar.x+19, gameChar.y-36.5, gameChar.x+23.5, gameChar.y-34)
+	arc(gameChar.x+13.5, gameChar.y-25, 5, 5, 40, 250, OPEN)
+	arc(gameChar.x+21, gameChar.y-35, 5, 5, 200, 40, OPEN)
+	// trouser
+	fill(80,80,80)
+	quad(gameChar.x-5, gameChar.y-13, gameChar.x+5, gameChar.y-13, gameChar.x+2.5, gameChar.y-10, gameChar.x-2.5, gameChar.y-10)
+	//left leg
+	fill(0,255,255)
+	quad(gameChar.x-4, gameChar.y-8, gameChar.x-7, gameChar.y-12, gameChar.x-16.5, gameChar.y-7, gameChar.x-13.5, gameChar.y-3)
+	arc(gameChar.x-5.5, gameChar.y-10, 5, 5, 220, 70, OPEN)
+	arc(gameChar.x-15, gameChar.y-5, 5, 5, 40, 250, OPEN)
+	//right leg
+	fill(0,255,255)
+	quad(gameChar.x+3.8, gameChar.y-8, gameChar.x+7, gameChar.y-12, gameChar.x+15.2, gameChar.y-1, gameChar.x+11.5, gameChar.y+2)
+	arc(gameChar.x+5.5, gameChar.y-10, 5, 5, 120, 340, OPEN)
+	arc(gameChar.x+13, gameChar.y, 5, 5, 320, 150, OPEN)
+	//Refix
+	rectMode(CORNER);
+}
+
+function drawStandFront(){
+	//Standing, facing frontwards
+	//Setup
+	noFill();
+	stroke(0);
+	rectMode(CENTER);
+	//head
+	fill(0,255,255)
+	rect(gameChar.x, gameChar.y-35, 16, 14, 4)
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-35, 10, 8, 2)
+	//eyes
+	fill(0,255,255)
+	stroke(0,255,255)
+	ellipse(gameChar.x-2, gameChar.y-35, 2, 4)
+	ellipse(gameChar.x+2, gameChar.y-35, 2, 4)
+	stroke(0)
+	//ears
+	fill(80,80,80)
+	ellipse(gameChar.x-9, gameChar.y-35, 2, 4)
+	ellipse(gameChar.x+9, gameChar.y-35, 2, 4)
+	noFill()
+	//neck
+	rect(gameChar.x, gameChar.y-27.5, 6, 1)
+	//chest
+	fill(80,80,80)
+	rect(gameChar.x, gameChar.y-20, 22, 14, 2)
+	//left arm
+	fill(0,255,255)
+	rect(gameChar.x-13.5, gameChar.y-18, 5, 14, 2.5)
+	//right arm
+	rect(gameChar.x+13.5, gameChar.y-18, 5, 14, 2.5)
+	// trouser
+	fill(80,80,80)
+	quad(gameChar.x-5, gameChar.y-13, gameChar.x+5, gameChar.y-13, gameChar.x+2.5, gameChar.y-10, gameChar.x-2.5, gameChar.y-10)
+	//left leg
+	fill(0,255,255)
+	rect(gameChar.x-5.5, gameChar.y-5, 5, 14, 2.5)
+	//right leg
+	rect(gameChar.x+5.5, gameChar.y-5, 5, 14, 2.5)
+	//Refix
+	rectMode(CORNER);
 }
