@@ -20,10 +20,18 @@ let mountains;
 let cameraPosX;
 let collectables;
 let canyons;
+let levelWidth,
+lifeFullImg;
+// objects
+const myCamera = {};
+
+function preload(){
+	lifeFullImg = loadImage('./images/batteryLifeFull.png');
+}
 
 function setup()
 {
-	createCanvas(2000, 576);
+	createCanvas(windowWidth, 576);
 	floorPos_y = height * 3/4;
 	gameChar_x = 100;
 	gameChar_y = floorPos_y;
@@ -33,6 +41,14 @@ function setup()
 	isFalling = false;
 	isPlummeting = false;
 	jumpLimit = floorPos_y - 50;
+
+	// My game character's properties
+
+	// Camera's properies
+	myCamera.start = 600;
+
+	// Width of the game level
+	levelWidth = 4000;
 
 	// Trees
 	trees_x = [ 0, 200, 400, 700, 900 ]
@@ -75,7 +91,7 @@ function draw()
 	///////////DRAWING CODE//////////
 
 	// camera test
-	cameraPosX = gameChar_x - 100;
+	// cameraPosX = gameChar_x - 100;
 
 	//fill the sky blue
 	background(100,155,255);
@@ -91,10 +107,19 @@ function draw()
 	// Third Layer
 	fill(77,44,62);
 	rect(0, floorPos_y+2*((height-floorPos_y)/3), width, (height-floorPos_y)/3);
-	rect(110, 110, 200, 200);
+
+
 
 	// push();
-	translate(-cameraPosX, 0);
+	// Camera Control
+	// Same as game character between x(600-3400)
+	// Fixed when close to edges
+	// myCamera.start = start of the camera position (used in translate so that when gameChar passed the camera start, translate others behind gameChar by myCamera.start pixels)
+	if(gameChar_x > myCamera.start && gameChar_x < (levelWidth-myCamera.start)){
+		translate(-(gameChar_x-myCamera.start), 0);
+	}else if(gameChar_x >= (levelWidth-myCamera.start)){
+		translate(-(levelWidth-myCamera.start-myCamera.start), 0);
+	}
 
 	drawClouds();
 	drawMountains();
@@ -108,6 +133,8 @@ function draw()
 		checkCollectable(collectables[i]);	
 	}
 	// pop();
+	image(lifeFullImg, 15, 10);
+	// lifeFullImg.resize(120, 0);
 
 	//the game character
 	if(isLeft && (isJumping || isFalling))
@@ -125,8 +152,6 @@ function draw()
 		//ears
 		fill(80,80,80)
 		ellipse(gameChar_x, gameChar_y-35, 2, 4)
-		//antenna
-		line(gameChar_x, gameChar_y-35, gameChar_x+4, gameChar_y-45)
 		//neck
 		fill(80,80,80)
 		rect(gameChar_x, gameChar_y-27.5, 3, 1)
@@ -176,8 +201,6 @@ function draw()
 		//ears
 		fill(80,80,80)
 		ellipse(gameChar_x, gameChar_y-35, 2, 4)
-		//antenna
-		line(gameChar_x, gameChar_y-35, gameChar_x-4, gameChar_y-45)
 		//neck
 		fill(80,80,80)
 		rect(gameChar_x, gameChar_y-27.5, 3, 1)
@@ -228,8 +251,6 @@ function draw()
 		fill(80,80,80)
 		ellipse(gameChar_x, gameChar_y-35, 2, 4)
 		noFill()
-		//antenna
-		line(gameChar_x, gameChar_y-35, gameChar_x+2, gameChar_y-45)
 		//neck
 		fill(80,80,80)
 		rect(gameChar_x, gameChar_y-27.5, 3, 1)
@@ -280,8 +301,6 @@ function draw()
 		//ears
 		fill(80,80,80)
 		ellipse(gameChar_x, gameChar_y-35, 2, 4)
-		//antenna
-		line(gameChar_x, gameChar_y-35, gameChar_x-2, gameChar_y-45)
 		//neck
 		fill(80,80,80)
 		rect(gameChar_x, gameChar_y-27.5, 3, 1)
@@ -342,9 +361,6 @@ function draw()
 		ellipse(gameChar_x-9, gameChar_y-35, 2, 4)
 		ellipse(gameChar_x+9, gameChar_y-35, 2, 4)
 		noFill()
-		//antenna
-		line(gameChar_x-9, gameChar_y-35, gameChar_x-11, gameChar_y-45)
-		line(gameChar_x+9, gameChar_y-35, gameChar_x+11, gameChar_y-45)
 		//neck
 		fill(0,255,255)
 		rect(gameChar_x, gameChar_y-27.5, 6, 1)
@@ -401,9 +417,6 @@ function draw()
 		ellipse(gameChar_x-9, gameChar_y-35, 2, 4)
 		ellipse(gameChar_x+9, gameChar_y-35, 2, 4)
 		noFill()
-		//antenna
-		line(gameChar_x-9, gameChar_y-35, gameChar_x-11, gameChar_y-45)
-		line(gameChar_x+9, gameChar_y-35, gameChar_x+11, gameChar_y-45)
 		//neck
 		rect(gameChar_x, gameChar_y-27.5, 6, 1)
 		//chest
@@ -434,9 +447,9 @@ function draw()
 	// checking left right
 	if(isPlummeting == false){
 		if(isLeft == true && gameChar_x > 20){
-			gameChar_x -= 4;
-		}else if(isRight == true){
-			gameChar_x += 4;
+			gameChar_x -= 40;
+		}else if(isRight == true && gameChar_x < (levelWidth-20)){
+			gameChar_x += 40;
 		}
 	}
 
@@ -460,11 +473,11 @@ function draw()
 	}
 
 	//TESTING ZONE
-	stroke(255, 0, 0);
-	line(0, 0, 0, windowHeight);
-	line(90, 0, 90, windowHeight);
-	line(990, 0, 990, windowHeight);
-
+	// for(let i = 0; i < 5000; i+=500){
+	// 	stroke(255, 0, 0);
+	// 	text(i, i, 550);
+	// 	rect(i, 0, 1, windowHeight);
+	// }
 }
 
 
