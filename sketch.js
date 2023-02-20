@@ -45,75 +45,85 @@ function setup()
 	jumpLimit = floorPos_y - 50;
 
 	// My game character's properties
-	gameChar.x = 100;
+	gameChar.x = 150;
 	gameChar.y = floorPos_y;
 	gameChar.lives = 3;
-	gameChar.speed = 50;
+	gameChar.speed = 5;
 	gameChar.jumpHeight = 5;
+	gameChar.score = 0;
 
 	// Camera's properies
 	myCamera.start = 670;
 
 	// Goal's properies
-	goal.x = 3970;
+	goal.x = 3960;
 	goal.y = floorPos_y -80;
 
 	// Width of the game level
 	levelWidth = 4000;
 
 	// Trees
-	trees_x = [ 60, 400, 700, 900 ]
+	trees_x = [ 60, 400, 850, 1300, 1650, 2400, 3150, 3370, 3700]
 	treePos_y = height/2;
 
 	// Clouds
 	clouds = [
-		cloud1 = {x_pos: 20, y_pos: 80},
-		cloud2 = {x_pos: 300, y_pos: 150},
-		cloud3 = {x_pos: 600, y_pos: 130}
+		{x_pos: 20, y_pos: 80},
+		{x_pos: 300, y_pos: 150},
+		{x_pos: 600, y_pos: 130},
+		{x_pos: 1000, y_pos: 90},
+		{x_pos: 1300, y_pos: 120},
+		{x_pos: 1600, y_pos: 100},
+		{x_pos: 1900, y_pos: 130},
+		{x_pos: 2200, y_pos: 120},
+		{x_pos: 2600, y_pos: 130},
+		{x_pos: 3000, y_pos: 100},
+		{x_pos: 3350, y_pos: 130},
+		{x_pos: 3700, y_pos: 90},
 	]
 
 	// Mountains
 	mountains = [
-		mountain1 = {x_pos: 60, y_pos: floorPos_y},
-		mountain2 = {x_pos: 660, y_pos: floorPos_y},
-		// mountain3 = {x_pos: 900, y_pos: floorPos_y}
+		{x_pos: 60, y_pos: floorPos_y},
+		{x_pos: 660, y_pos: floorPos_y},
+		{x_pos: 1535, y_pos: floorPos_y},
+		{x_pos: 2350, y_pos: floorPos_y},
+		{x_pos: 3385, y_pos: floorPos_y}
 	]
 
 	// Drawing
 	canyons = [
 		{x_pos: 500, width: 80},
 		{x_pos: 1100, width: 80},
-		// {x_pos: 600, width: 80},
-		// {x_pos: 900, width: 80},
-		// {x_pos: 1100, width: 80}
+		{x_pos: 1400, width: 80},
+		{x_pos: 1950, width: 90},
+		{x_pos: 2150, width: 90},
+		{x_pos: 2800, width: 100},
+		{x_pos: 3000, width: 100},
+		{x_pos: 3200, width: 100},
+		{x_pos: 3800, width: 110}
 	]
 	collectables = [
-		// {x_pos: 130, y_pos: 370, size: 10, isFound: false},
-		// {x_pos: 330, y_pos: 370, size: 10, isFound: false},
-		// {x_pos: 430, y_pos: 370, size: 10, isFound: false},
-		// {x_pos: 230, y_pos: 370, size: 10, isFound: false},
-		// {x_pos: 530, y_pos: 370, size: 10, isFound: false}
+		{x_pos: 330, y_pos: 380, size: 7.5, isFound: false},
+		{x_pos: 700, y_pos: 380, size: 7.5, isFound: false},
+		{x_pos: 1230, y_pos: 380, size: 7.5, isFound: false},
+		{x_pos: 1770, y_pos: 380, size: 7.5, isFound: false},
+		{x_pos: 2090, y_pos: 380, size: 7.5, isFound: false},
+		{x_pos: 2560, y_pos: 380, size: 7.5, isFound: false},
+		{x_pos: 2950, y_pos: 380, size: 7.5, isFound: false},
+		{x_pos: 3600, y_pos: 380, size: 7.5, isFound: false},
+		{x_pos: 3600, y_pos: 380, size: 7.5, isFound: false},
+		{x_pos: 3930, y_pos: 380, size: 7.5, isFound: false},
 	]
 }
 
 function draw()
 {
 	///////////DRAWING CODE//////////
-
-	//fill the sky blue
-	background(161, 220, 255);
-
-	//draw desert ground
-	noStroke();
-	// First Layer
-	fill(182,91,52);
-	rect(0, floorPos_y, width, (height-floorPos_y)/3)
-	// Second Layer
-	fill(111,63,65);
-	rect(0, floorPos_y+((height-floorPos_y)/3), width, (height-floorPos_y)/3);
-	// Third Layer
-	fill(77,44,62);
-	rect(0, floorPos_y+2*((height-floorPos_y)/3), width, (height-floorPos_y)/3);
+	// Draw Things that do not translate (Fixed Position)
+	drawSky();
+	drawGround();
+	checkLives(gameChar.lives);
 
 	// Camera Control
 	// Same as game character between x(600-3400)
@@ -125,6 +135,7 @@ function draw()
 		translate(-(levelWidth-myCamera.start-myCamera.start), 0);
 	}
 
+	// Draw all the other things that move positions
 	drawClouds();
 	drawMountains();
 	drawTrees();
@@ -137,7 +148,6 @@ function draw()
 		drawCollectable(collectables[i]);
 		checkCollectable(collectables[i]);	
 	}
-	image(threeLivesImg, 15, 10);
 
 	// Checking Game character's style
 	if(isLeft && (isJumping || isFalling)){
@@ -179,17 +189,19 @@ function draw()
 		if(gameChar.y < floorPos_y){
 			gameChar.y += 5;
 		}else{
-			gameChar.y = floorPos_y;
 			isFalling = false;
+			gameChar.x = 150;
+			gameChar.y = floorPos_y;
+			gameChar.lives -= 1;
 		}
 	}
 
 	//TESTING ZONE
-	for(let i = 500; i < 5000; i+=500){
-		stroke(255, 0, 0);
-		text(i, i, 550);
-		rect(i, 0, 1, windowHeight);
-	}
+	// for(let i = 1000; i < 5000; i+=500){
+	// 	stroke(255, 0, 0);
+	// 	text(i, i, 550);
+	// 	rect(i, 0, 1, windowHeight);
+	// }
 }
 
 function keyPressed()
@@ -223,6 +235,42 @@ function keyReleased()
 	}
 	// console.log("keyReleased: " + key);
 	// console.log("keyReleased: " + keyCode);
+}
+
+function drawSky(){
+	//fill the sky blue
+	background(161, 220, 255);
+}
+
+function drawGround(){
+	//draw desert ground
+	noStroke();
+	// First Layer
+	fill(182,91,52);
+	rect(0, floorPos_y, width, (height-floorPos_y)/3)
+	// Second Layer
+	fill(111,63,65);
+	rect(0, floorPos_y+((height-floorPos_y)/3), width, (height-floorPos_y)/3);
+	// Third Layer
+	fill(77,44,62);
+	rect(0, floorPos_y+2*((height-floorPos_y)/3), width, (height-floorPos_y)/3);
+}
+
+function checkLives(lives){
+	switch(lives){
+		case 0:
+			image(noLivesImg, 10, 10);
+			break;
+		case 1:
+			image(oneLivesImg, 10, 10);
+			break;
+		case 2:
+			image(twoLivesImg, 10, 10);
+			break;
+		case 3:
+			image(threeLivesImg, 10, 10);
+			break;
+	}
 }
 
 function drawClouds(){
@@ -364,7 +412,7 @@ function checkCollectable(t_collectable){
 
 function checkCanyon(canyon){
 	// check plummeting
-	if((gameChar.y >= floorPos_y) && (gameChar.y < (floorPos_y+150)) && (Math.abs((gameChar.x) - (canyon.x_pos+canyon.width/2)) <= 30)){
+	if((gameChar.y >= floorPos_y) && (gameChar.y < (floorPos_y+150)) && (Math.abs((gameChar.x) - (canyon.x_pos+canyon.width/2)) <= ((canyon.width/2)-10))){
 		isPlummeting = true;
 		// this height is checked so that character doesn't look like dragged down while in the middle of the jump
 		if(gameChar.y > (floorPos_y+50)){			
