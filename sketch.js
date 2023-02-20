@@ -18,7 +18,9 @@ let mountains;
 let collectables;
 let canyons;
 let levelWidth,
-lifeFullImg;
+lifeFullImg, finalTextX;
+let threeLivesImg, twoLivesImg, oneLivesImg, noLivesImg;
+let jumpSound, fallSound, collectSound, loseSound, winSound, gameEnd;
 
 // objects
 const myCamera = {},
@@ -31,6 +33,13 @@ function preload(){
 	oneLivesImg = loadImage('./images/oneLives.png');
 	noLivesImg = loadImage('./images/noLives.png');
 	goalImg = loadImage('./images/goal.png');
+	
+	soundFormats('wav', 'mp3');
+	jumpSound = loadSound('./sound/jump.wav');
+	fallSound = loadSound('./sound/fall.wav');
+	collectSound = loadSound('./sound/collect.mp3');
+	loseSound = loadSound('./sound/lose.wav');
+	winSound = loadSound('./sound/win.mp3')
 }
 
 function setup()
@@ -44,8 +53,15 @@ function setup()
 	isPlummeting = false;
 	jumpLimit = floorPos_y - 50;
 
+	// To stop sounds from repeating
+	gameEnd = 0;
+
+	// Final Text x position because of translate it needs to keep chaning
+	finalTextX = 600;
+
 	// My game character's properties
-	gameChar.x = 150;
+	gameChar.startX = 150;
+	gameChar.x = gameChar.startX;
 	gameChar.y = floorPos_y;
 	gameChar.lives = 3;
 	gameChar.speed = 5;
@@ -68,18 +84,18 @@ function setup()
 
 	// Clouds
 	clouds = [
-		{x_pos: 20, y_pos: 80},
-		{x_pos: 300, y_pos: 150},
+		{x_pos: 20, y_pos: 120},
+		{x_pos: 300, y_pos: 180},
 		{x_pos: 600, y_pos: 130},
-		{x_pos: 1000, y_pos: 90},
-		{x_pos: 1300, y_pos: 120},
-		{x_pos: 1600, y_pos: 100},
-		{x_pos: 1900, y_pos: 130},
+		{x_pos: 1000, y_pos: 160},
+		{x_pos: 1300, y_pos: 140},
+		{x_pos: 1600, y_pos: 180},
+		{x_pos: 1900, y_pos: 140},
 		{x_pos: 2200, y_pos: 120},
-		{x_pos: 2600, y_pos: 130},
-		{x_pos: 3000, y_pos: 100},
-		{x_pos: 3350, y_pos: 130},
-		{x_pos: 3700, y_pos: 90},
+		{x_pos: 2600, y_pos: 160},
+		{x_pos: 3000, y_pos: 140},
+		{x_pos: 3350, y_pos: 180},
+		{x_pos: 3700, y_pos: 120},
 	]
 
 	// Mountains
@@ -112,7 +128,6 @@ function setup()
 		{x_pos: 2560, y_pos: 380, size: 7.5, isFound: false},
 		{x_pos: 2950, y_pos: 380, size: 7.5, isFound: false},
 		{x_pos: 3600, y_pos: 380, size: 7.5, isFound: false},
-		{x_pos: 3600, y_pos: 380, size: 7.5, isFound: false},
 		{x_pos: 3930, y_pos: 380, size: 7.5, isFound: false},
 	]
 }
@@ -124,6 +139,7 @@ function draw()
 	drawSky();
 	drawGround();
 	checkLives(gameChar.lives);
+	checkScore(gameChar.score);
 
 	// Camera Control
 	// Same as game character between x(600-3400)
@@ -140,14 +156,15 @@ function draw()
 	drawMountains();
 	drawTrees();
 	drawGoal();
-	for(let i = 0; i < canyons.length; i++){
-		drawCanyon(canyons[i]);
-		checkCanyon(canyons[i]);	
-	}
 	for(let i = 0; i < collectables.length; i++){
 		drawCollectable(collectables[i]);
 		checkCollectable(collectables[i]);	
 	}
+	for(let i = 0; i < canyons.length; i++){
+		drawCanyon(canyons[i]);
+		checkCanyon(canyons[i]);	
+	}
+	checkGoal();
 
 	// Checking Game character's style
 	if(isLeft && (isJumping || isFalling)){
@@ -190,23 +207,12 @@ function draw()
 			gameChar.y += 5;
 		}else{
 			isFalling = false;
-			gameChar.x = 150;
-			gameChar.y = floorPos_y;
-			gameChar.lives -= 1;
 		}
 	}
-
-	//TESTING ZONE
-	// for(let i = 1000; i < 5000; i+=500){
-	// 	stroke(255, 0, 0);
-	// 	text(i, i, 550);
-	// 	rect(i, 0, 1, windowHeight);
-	// }
 }
 
 function keyPressed()
 {
-	// console.log(dist(gameChar.x, gameChar.y, collectable.x_pos, collectable.y_pos))
 	// if statements to control the animation of the character when
 	// keys are pressed.
 	if(isPlummeting == false){
@@ -216,12 +222,10 @@ function keyPressed()
 			isRight = true;
 		}
 		if((key == "ArrowUp" || key == "w" || key == " ") && isJumping == false && isFalling == false){
+			jumpSound.play();
 			isJumping = true;
 		}
 	}	
-	//open up the console to see how these work
-	// console.log("keyPressed: " + key);
-	// console.log("keyPressed: " + keyCode);
 }
 
 function keyReleased()
@@ -233,8 +237,6 @@ function keyReleased()
 	}else if(key == "ArrowRight" || key == "d"){
 		isRight = false;
 	}
-	// console.log("keyReleased: " + key);
-	// console.log("keyReleased: " + keyCode);
 }
 
 function drawSky(){
@@ -271,6 +273,13 @@ function checkLives(lives){
 			image(threeLivesImg, 10, 10);
 			break;
 	}
+}
+
+function  checkScore(scores){
+	drawCollectable({x_pos: 180, y_pos: 34, size: 7.5, isFound: false});
+	fill(0);
+	textSize(30);
+	text(scores, 205, 44);
 }
 
 function drawClouds(){
@@ -406,27 +415,75 @@ function drawCanyon(canyon){
 function checkCollectable(t_collectable){
 	// check item found
 	if((t_collectable.isFound == false) && (Math.abs((gameChar.x) - t_collectable.x_pos) <= 12) && (Math.abs((gameChar.y) - t_collectable.y_pos) <= 150)){
+		collectSound.play();
 		t_collectable.isFound = true;
+		gameChar.score += 1;
 	}
 }
 
 function checkCanyon(canyon){
 	// check plummeting
-	if((gameChar.y >= floorPos_y) && (gameChar.y < (floorPos_y+150)) && (Math.abs((gameChar.x) - (canyon.x_pos+canyon.width/2)) <= ((canyon.width/2)-10))){
-		isPlummeting = true;
-		// this height is checked so that character doesn't look like dragged down while in the middle of the jump
-		if(gameChar.y > (floorPos_y+50)){			
-			isLeft = false;
-			isRight = false;
-			// falling middle
-			if(gameChar.x < (canyon.x_pos+canyon.width/2)){
-				gameChar.x += 5;
-			}else{
-				gameChar.x -= 5;
+	if((gameChar.y >= floorPos_y) && (Math.abs((gameChar.x) - (canyon.x_pos+canyon.width/2)) <= ((canyon.width/2)-10))){
+		if((fallSound.isPlaying() == false) && (gameEnd == 0)){
+			fallSound.play();
+		}
+		// Keep falling before hitting canyon bottom
+		if(gameChar.y < (floorPos_y+150)){
+			isPlummeting = true;
+			// this height is checked so that character doesn't look like dragged down while in the middle of the jump
+			if(gameChar.y > (floorPos_y+50)){			
+				isLeft = false;
+				isRight = false;
+				// falling middle
+				if(gameChar.x < (canyon.x_pos+canyon.width/2)){
+					gameChar.x += 5;
+				}else{
+					gameChar.x -= 5;
+				}
+			}
+			// falling down
+			gameChar.y += 5;
+		}
+		// Once hit the canyon bottom, reposition to start
+		else if(gameChar.y >= (floorPos_y+150)){
+			if(gameChar.lives > 1){
+				gameChar.lives -= 1;	
+				gameChar.x = gameChar.startX;
+				gameChar.y = floorPos_y;
+				isPlummeting = false;
+			}
+			else{
+				gameChar.lives = 0;
+				checkFinalX();
+				fill(255, 0, 0);
+				textSize(100);
+				text("Game Over!!!", (finalTextX), (576/2)-200);
+				text("You Lost!!!", (finalTextX)+50, (576/2)-100);
+				text("Final Score:", (finalTextX)+20, (576/2));
+				text(gameChar.score, (finalTextX)+550, (576/2));
+				gameEnd += 1;
+				if((loseSound.isPlaying() == false) && (gameEnd == 1)){
+					loseSound.play();
+				}
 			}
 		}
-		// falling down
-		gameChar.y += 5;
+	}
+}
+
+function checkGoal(){
+	if(gameChar.x >= 3960){
+		isPlummeting = true;
+		checkFinalX();
+		fill(0, 255, 0);
+		textSize(100);
+		text("Congratulations!!!", (finalTextX)-300, (576/2)-200);
+		text("You Won!!!", (finalTextX)+50-300, (576/2)-100);
+		text("Final Score:", (finalTextX)+20-300, (576/2));
+		text(gameChar.score, (finalTextX)+550-300, (576/2));
+		gameEnd += 1;
+		if((winSound.isPlaying() == false) && (gameEnd == 1)){
+			winSound.play();
+		}
 	}
 }
 
@@ -728,4 +785,13 @@ function drawStandFront(){
 	rect(gameChar.x+5.5, gameChar.y-5, 5, 14, 2.5)
 	//Refix
 	rectMode(CORNER);
+}
+
+// Check final position of x to set final text's x
+function checkFinalX(){
+	if(gameChar.x > myCamera.start && gameChar.x < (levelWidth-myCamera.start)){
+		finalTextX = gameChar.x;
+	}else if(gameChar.x >= (levelWidth-myCamera.start)){
+		finalTextX = 3500;
+	}
 }
